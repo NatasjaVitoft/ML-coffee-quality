@@ -5,8 +5,6 @@ import re
 
 API_URL = 'http://localhost:11434/api/chat'
 
-
-
 def fetch_response(prompt: str) -> str:
 
     body = {
@@ -44,7 +42,6 @@ def fetch_response(prompt: str) -> str:
 
         
         else:
-
             return f"Error. Try again"
     
     except requests.exceptions.RequestException as e:
