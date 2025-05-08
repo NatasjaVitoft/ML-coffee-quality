@@ -25,44 +25,52 @@ def fetch_response(prompt: str) -> str:
         sample_str = sample_str.to_csv(index=False)
 
 
-    system = (
-
-        f"Traits: {traits}\n"
-        f"Task: {task}\n"
-        f"Tone: {tone}\n"
-        f"Target: {target}\n"
-        f"Dataset Descriptive Statistics: {desc_str}\n"
-        f"Dataset Correlation Matrix: {corr_str}\n"
-        f"Dataset Sample: {sample_str}"
-            
-    )
-
     full_prompt = f"""
 You are provided a user prompt and a context.
 Use the context as a basis for answering the user prompt as good as you can.
 Respond acting as is specified in "Traits".
 Respond like youre addressing what is specified in "Target".
 
-Dataset information is provided as a Sample, Correlation Matrix and Descriptive Statistics.
-They represent a Pandas Dataframe.
+
+All dataframe information is provided in CSV format, but represents a Pandas Dataframe.
 Use this as a background for responding.
 
 Only consider the context if it is provided explicitly
 
-Context:
-{system}
+## Context:
+Traits: {traits}
+Task: {task}
+Tone: {tone}
+Target: {target}
 
-User Prompt:
+
+### Dataset Sample
+If present, this is a 5 row sample of the users dataset:
+{sample_str}\n
+
+Dataset Descriptive Statitics
+This is generated from the users dataframe using pandas df.describe().
+the rows from top is: count, mean, standard deviation, mean, 25% quartile, 50% quartile
+, 75% quartile, max:
+{desc_str}\n
+
+Dataset Correlation Matrix.
+This is generated from the users dataframe using pandas df.corr()
+The rows represent the columns. the values is the correlation between features
+{corr_str}\n
+
+## User Prompt:
 {prompt}
 """
 
     body = {
-        "model": "deepseek-r1:1.5b",
+        "model": "deepseek-r1:7b",
         "messages": [
-           # {"role": "system", "content": system,
-           #},
             {"role": "user", "content": full_prompt}
-        ]
+        ],
+        "options": {
+             "num_ctx": 12288,
+        }
     }
 
     st.write(body)
@@ -117,8 +125,8 @@ with st.sidebar.form("form"):
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
         sample = df.sample(5)
-        desc = df.describe()
-        corr = df.corr()
+        desc = df.describe(include=[int, float, complex])
+        corr = df.corr(numeric_only=True)
         st.dataframe(sample)
         st.dataframe(desc)
         st.dataframe(corr)
@@ -157,4 +165,4 @@ if prompt := st.chat_input("Prompt The Bot"):
         st.markdown(response)
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
-    st.session_state.messages.append({"role": "bot", "content": response})
+    st.session_state.messages.append({"role": "assistant", "content": response})
