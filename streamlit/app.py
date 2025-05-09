@@ -59,7 +59,7 @@ The rows represent the columns. the values is the correlation between features
 """
 
     body = {
-        "model": "deepseek-r1:7b",
+        "model": "qwen3:8b",
         "messages": [
             {"role": "user", "content": full_prompt}
         ],
@@ -70,39 +70,39 @@ The rows represent the columns. the values is the correlation between features
 
     st.write(body)
 
+    with st.spinner("Crunching...", show_time=True):
+        try:
 
-    try:
+            res = requests.post(API_URL, json=body)
 
-        res = requests.post(API_URL, json=body)
+            if res.status_code == 200:
 
-        if res.status_code == 200:
+                response_parts = res.text.strip().split("\n")
 
-            response_parts = res.text.strip().split("\n")
+                response = []
 
-            response = []
+                for part in response_parts:
 
-            for part in response_parts:
+                    try:
+                        response_json = json.loads(part)
+                        response.append(response_json['message']['content'])
+                    except json.JSONDecodeError:
+                        continue
 
-                try:
-                    response_json = json.loads(part)
-                    response.append(response_json['message']['content'])
-                except json.JSONDecodeError:
-                    continue
+                final_response = ''.join(response)
 
-            final_response = ''.join(response)
+                final_response = re.sub(r'<think>', '', final_response)
+                final_response = re.sub(r'</think>', '', final_response)
 
-            final_response = re.sub(r'<think>', '', final_response)
-            final_response = re.sub(r'</think>', '', final_response)
+                return final_response.strip()
 
-            return final_response.strip()
-
+            
+            else:
+                return f"Error. Try again"
         
-        else:
-            return f"Error. Try again"
-    
-    except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException as e:
 
-        return f"Error connecting to API"
+            return f"Error connecting to API"
 
 # Sidebar with prompt settings 
 
